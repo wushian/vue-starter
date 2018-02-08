@@ -261,6 +261,12 @@
         <p>Multi</p>
         <vue-select :options="options" :multiple="true"></vue-select>
       </vue-grid-item>
+
+      <vue-grid-item>
+        <div class="h1">DatePicker</div>
+
+        <vue-date-picker></vue-date-picker>
+      </vue-grid-item>
     </vue-grid>
   </div>
 </template>
@@ -286,6 +292,7 @@
   import VueAccordionItem from '../../shared/components/VueAccordionItem/VueAccordionItem.vue';
   import VuePagination from '../../shared/components/VuePagination/VuePagination.vue';
   import VueSelect from '../../shared/components/VueSelect/VueSelect.vue';
+  import VueDatePicker from '../../shared/components/VueDatePicker/VueDatePicker.vue';
 
   export default {
     metaInfo: {
@@ -312,6 +319,7 @@
       VueAccordionItem,
       VuePagination,
       VueSelect,
+      VueDatePicker,
     },
     data() {
       return {
