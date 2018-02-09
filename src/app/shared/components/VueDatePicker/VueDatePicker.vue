@@ -1,39 +1,26 @@
 <template>
   <div :class="$style.calendar">
     <div :class="$style.header">
-      <h3 @click="setSelecting('year')">
-        {{ selectedYear }}
-      </h3>
-
-      <h2 @click="setSelecting('date')">
-        {{ abbrivatedDay }}, {{ selectedMonthWord }} {{ selectedDay }}
-      </h2>
+      <h3 @click="setSelecting('year')">{{ selectedYear }}</h3>
+      <h2 @click="setSelecting('date')">{{ abbrivatedDay }}, {{ selectedMonthWord }} {{ selectedDay }}</h2>
     </div>
 
     <div :class="$style.body" v-if="selecting === 'date'">
       <div :class="$style.date">
-        <div :class="$style.arrow" @click="setByMonth(currentMonth - 1)" v-if="showLeftArrow">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="#212121" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-          </svg>
-        </div>
+        <div :class="$style.arrow" @click="setByMonth(currentMonth - 1)" v-if="showLeftArrow"></div>
         <div :class="$style.currentDate">{{ currentMonthWord }} {{ currentYear }}</div>
-        <div :class="$style.arrow" @click="setByMonth(currentMonth + 1)" v-if="showRightArrow">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="#212121" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-          </svg>
-        </div>
+        <div :class="$style.arrow" @click="setByMonth(currentMonth + 1)" v-if="showRightArrow"></div>
       </div>
       <table>
         <thead>
         <tr>
-          <td>S</td>
-          <td>M</td>
-          <td>T</td>
-          <td>W</td>
-          <td>T</td>
-          <td>F</td>
-          <td>S</td>
+          <td><span>S</span></td>
+          <td><span>M</span></td>
+          <td><span>T</span></td>
+          <td><span>W</span></td>
+          <td><span>T</span></td>
+          <td><span>F</span></td>
+          <td><span>S</span></td>
         </tr>
         </thead>
 
@@ -54,60 +41,27 @@
       </table>
     </div>
 
-    <!--<div class="calendar-year-select" v-if="selecting === 'year'">-->
-    <!--<div :class="{ 'selected': year.selected }"-->
-    <!--:id="`${year.year}-calendar-year`"-->
-    <!--v-for="year in years"-->
-    <!--:key="year.year"-->
-    <!--@click="setByYear(year.year)">-->
-    <!--{{ year.year }}-->
-    <!--</div>-->
-    <!--</div>-->
+    <div :class="$style.year" v-if="selecting === 'year'">
+      <div :class="[year.selected ? $style.selected : '']"
+        :id="`${year.year}-calendar-year`"
+        v-for="year in years"
+        :key="year.year"
+        @click="setByYear(year.year)">
+        {{ year.year }}
+      </div>
+    </div>
 
-    <div class="calendar-footer" v-if="! footer">
-      <button @click.stop.prevent="onClose">Cancel</button>
-
-      <button @click.stop.prevent="onInput">Ok</button>
+    <div :class="$style.footer">
+      <vue-button @click.stop.prevent="onClose" accent>Cancel</vue-button>
+      <vue-button @click.stop.prevent="onInput" primary>Ok</vue-button>
     </div>
   </div>
 </template>
 
-<script>
-  /**
-   * Helpers for no dependencies™
-   */
+<script lang="ts">
+  import VueButton from '../VueButton/VueButton.vue';
 
-  const dayMap = {
-    0: 'Sun',
-    1: 'Mon',
-    2: 'Tue',
-    3: 'Wed',
-    4: 'Thu',
-    5: 'Fri',
-    6: 'Sat'
-  };
-
-  const monthMap = {
-    0: 'January',
-    1: 'February',
-    2: 'March',
-    3: 'April',
-    4: 'May',
-    5: 'June',
-    6: 'July',
-    7: 'August',
-    8: 'September',
-    9: 'October',
-    10: 'November',
-    11: 'December'
-  };
-
-  // Thanks, Lodash.
-
-  /**
-   * https://lodash.com/docs/4.17.4#slice
-   */
-  const slice = (array, start, end) => {
+  const slice = (array: any[], start: number, end: number) => {
     let length = array == null ? 0 : array.length;
 
     if (!length) {
@@ -141,11 +95,7 @@
 
     return result;
   };
-
-  /**
-   * https://lodash.com/docs/4.17.4#chunk
-   */
-  const chunk = (array, size) => {
+  const chunk = (array: any[], size: number) => {
     size = Math.max(size, 0);
 
     const length = array == null ? 0 : array.length;
@@ -167,12 +117,23 @@
     return result;
   };
 
-  /**
-   * Actual component stuff
-   */
+  interface IDay {
+    day: number;
+    currentDay: boolean;
+    selected: boolean;
+    disabled: boolean;
+  }
+
+  interface IYear {
+    year: number;
+    selected: boolean;
+  }
 
   export default {
     name: 'VueDatePicker',
+    components: {
+      VueButton
+    },
     props: {
       color: {
         type: String,
@@ -207,103 +168,43 @@
       }
     },
     computed: {
-      /**
-       * Returns if there was any initial date settings.
-       *
-       * @return {Boolean}
-       */
-      initialDate () {
+      initialDate(): boolean {
         return !!(this.value || this.min);
       },
-
-      /**
-       * The date property, converted to a date.
-       *
-       * @return {Date}
-       */
-      specifiedDate () {
+      specifiedDate(): Date {
         return new Date(this.value);
       },
-
-      /**
-       * Returns a formatted date e.g. 2016-4-19. This is emiited on the input event.
-       *
-       * @return {String}
-       */
-      calculatedDate () {
+      calculatedDate(): string {
         const day = this.selectedDay >= 10 ? this.selectedDay : `0${this.selectedDay}`;
 
         const month = this.selectedMonth + 1 >= 10 ? this.selectedMonth + 1 : `0${this.selectedMonth + 1}`;
 
         return `${this.selectedYear}-${month}-${day}`;
       },
-
-      /**
-       * Returns an abbreviation of a day e.g. Sun, Mon, etc.
-       *
-       * @return {String}
-       */
-      abbrivatedDay () {
-        return dayMap[this.selectedDayOfWeek];
+      abbrivatedDay(): string {
+        return this.dayMap[this.selectedDayOfWeek];
       },
-
-      /**
-       * Returns the currently viewed month as a word.
-       *
-       * @return {String}
-       */
-      currentMonthWord () {
-        return monthMap[this.currentMonth];
+      currentMonthWord(): string {
+        return this.monthMap[this.currentMonth];
       },
-
-      /**
-       * Returns the selected month as a word.
-       *
-       * @return {String}
-       */
-      selectedMonthWord () {
-        return monthMap[this.selectedMonth];
+      selectedMonthWord(): string {
+        return this.monthMap[this.selectedMonth];
       },
-
-      /**
-       * The minimum date the calendar will allow you to select.
-       *
-       * @return {Date}
-       */
-      minDate () {
+      minDate(): Date {
         if (this.min) {
           const minDateSplit = this.min.split('-');
 
           return new Date(minDateSplit[0], minDateSplit[1], minDateSplit[2]);
         }
-
-        return;
       },
-
-      /**
-       * The maximum date the calendar will allow you to select.
-       *
-       * @return {Date}
-       */
-      maxDate () {
+      maxDate(): Date {
         if (this.max) {
           const maxDateSplit = this.max.split('-');
 
           return new Date(maxDateSplit[0], maxDateSplit[1], maxDateSplit[2]);
         }
-
-        return;
       },
-
-      /**
-       * Determines if the left arrow for the current date should be shown.
-       *
-       * @return {Boolean}
-       */
-      showLeftArrow () {
-        // Show the left arrow when there is either no mininum date, or when the
-        // minimum year and minimum month are the same as the current year and
-        // current month.
+      showLeftArrow(): boolean {
         if (!this.min) return true;
 
         if (this.minDate.getFullYear() === this.currentYear &&
@@ -313,16 +214,7 @@
 
         return true;
       },
-
-      /**
-       * Determines if the right arrow for the current date should be shown.
-       *
-       * @return {Boolean}
-       */
-      showRightArrow () {
-        // Show the right arrow when there is either no maximum date, or when
-        // the maximum year and maximum month are the same as the current
-        // year and current month.
+      showRightArrow(): boolean {
         if (!this.max) return true;
 
         if (this.maxDate.getFullYear() === this.currentYear &&
@@ -332,31 +224,24 @@
 
         return true;
       },
-
-      /**
-       * Computes a formatted array of days for a given month and year.
-       *
-       * @return {Array}
-       */
-      calendar () {
-        let days = [];
+      calendar(): IDay[] {
+        let days: number[] = [];
 
         const paddingLeft = new Date(this.currentYear, this.currentMonth, 1).getDay();
         const daysInMonth = 32 - new Date(this.currentYear, this.currentMonth, 32).getDate();
         const today = new Date();
 
-        days = days.concat(Array(paddingLeft).fill(''));
+        days = days.concat(Array(paddingLeft).fill(null));
 
         for (let i = 0, len = daysInMonth; i < daysInMonth; i++) {
           days.push(i + 1);
-
         }
 
         const paddingRight = (Math.ceil(days.length / 7) * 7) - days.length;
 
-        days = days.concat(Array(paddingRight).fill(''));
+        days = days.concat(Array(paddingRight).fill(null));
 
-        const dayObjects = days.map((day) => {
+        const dayObjects: IDay[] = days.map((day): IDay => {
           const currentDay = (day === today.getDate()) &&
             (this.currentMonth === today.getMonth()) &&
             (this.currentYear === today.getFullYear());
@@ -365,21 +250,14 @@
             (this.currentMonth === this.selectedMonth) &&
             (this.currentYear === this.selectedYear);
 
-          const disabled = this.dayDisabled(day);
+          const disabled: boolean = this.dayDisabled(day);
 
-          return { day, currentDay, selected, disabled };
+          return { day, currentDay, selected, disabled } as IDay;
         });
 
         return chunk(dayObjects, 7);
       },
-
-      /**
-       * Computes a list of years.
-       *
-       * @return {Array}
-       */
-      years () {
-        // Set the first year of the array.
+      years(): IYear[] {
         let firstYear;
 
         if (this.min) {
@@ -390,8 +268,6 @@
           firstYear = (new Date).getFullYear();
         }
 
-        // Create a range of years to loop through which is either the maximum
-        // date minus the first year, or simply 100.
         let through = this.max ? (this.maxDate.getFullYear() + 1) - firstYear : 101;
 
         let years = [];
@@ -401,74 +277,69 @@
         }
 
         return years.map((year) => {
-          return { year, selected: year === this.selectedYear };
+          return { year, selected: year === this.selectedYear } as IYear;
         });
       }
     },
-    created () {
+    created() {
       this.setDate();
-
       this.setEscapeEvent();
     },
-    data: () => ({
-      selecting: 'date',
-      currentMonth: '',
-      currentYear: '',
-      selectedDayOfWeek: '',
-      selectedDay: '',
-      selectedMonth: '',
-      selectedYear: ''
-    }),
-    methods: {
-      /**
-       * Changes the display to the calendar or years depending on the value.
-       */
-      setSelecting (value) {
-        this.selecting = value;
-
-        // If the user is selecting a year, we want to go to the selected year
-        // minus two (as does the material design date picker).
-        if (value === 'year') {
-          this.$nextTick(() => {
-            const container = document.querySelector('.calendar-year-select');
-
-            const el = document.getElementById(`${this.selectedYear}-calendar-year`);
-
-            container.scrollTop = (el.offsetTop - 100) - 76;
-          });
+    data() {
+      return {
+        selecting: 'date',
+        currentMonth: '',
+        currentYear: '',
+        selectedDayOfWeek: '',
+        selectedDay: '',
+        selectedMonth: '',
+        selectedYear: '',
+        dayMap: {
+          0: 'Sun',
+          1: 'Mon',
+          2: 'Tue',
+          3: 'Wed',
+          4: 'Thu',
+          5: 'Fri',
+          6: 'Sat'
+        },
+        monthMap: {
+          0: 'January',
+          1: 'February',
+          2: 'March',
+          3: 'April',
+          4: 'May',
+          5: 'June',
+          6: 'July',
+          7: 'August',
+          8: 'September',
+          9: 'October',
+          10: 'November',
+          11: 'December'
         }
+      };
+    },
+    methods: {
+      setSelecting(value: string): void {
+        this.selecting = value;
       },
-
-      /**
-       * Set the date by the given day.
-       *
-       * @param {Object}
-       */
-      setByDay (day) {
-        if (day.disabled) return;
+      setByDay(day: any): void {
+        if (day.disabled) {
+          return;
+        }
 
         this.selectedYear = this.currentYear;
-
         this.selectedDay = day.day;
-
         this.selectedMonth = this.currentMonth;
-
         this.selectedDayOfWeek = new Date(this.selectedYear, this.selectedMonth, day.day).getDay();
 
         if (this.footer) {
           this.onInput();
         }
       },
-
-      /**
-       * Set the date by the given month.
-       *
-       * @param {[String, Number]}
-       */
-      setByMonth (month) {
+      setByMonth(month: number): void {
         if (month === 12) {
           this.currentYear = this.currentYear + 1;
-
           this.currentMonth = 0;
 
           return;
@@ -476,7 +347,6 @@
 
         if (month === -1) {
           this.currentYear = this.currentYear - 1;
-
           this.currentMonth = 11;
 
           return;
@@ -484,26 +354,12 @@
 
         this.currentMonth = month;
       },
-
-      /**
-       * Set the date by the given year.
-       *
-       * @param {[String, Number]}
-       */
-      setByYear (year) {
+      setByYear(year: number): void {
         this.selectedYear = year;
-
         this.currentYear = year;
-
         this.selecting = 'date';
       },
-
-      /**
-       * Set the initial date for the calendar.
-       */
-      setDate () {
-        // If a date property has been passed to the component, that will be
-        // used instead of the current day.
+      setDate(): void {
         let date;
 
         if (this.min && this.min && !this.value) {
@@ -521,19 +377,12 @@
         }
 
         this.selectedDayOfWeek = date.getDay();
-
         this.selectedMonth = date.getMonth();
-
         this.currentMonth = date.getMonth();
-
         this.selectedYear = date.getFullYear();
-
         this.currentYear = date.getFullYear();
       },
-
-      dayDisabled (day) {
-        // A day is disabled when the minimum month and minimum year are equal
-        // to the current month and year and the day is less than the min date's day
+      dayDisabled(day: number): boolean {
         if (this.min &&
           (this.minDate.getMonth() - 1 === this.currentMonth &&
             this.minDate.getFullYear() === this.currentYear) &&
@@ -541,8 +390,6 @@
           return true;
         }
 
-        //  Or when the maximum month and maximum year are equal to the current
-        //  month and year and the day is greater than the max date's day
         if (this.max &&
           (this.maxDate.getMonth() - 1 === this.currentMonth &&
             this.maxDate.getFullYear() === this.currentYear) &&
@@ -552,41 +399,24 @@
 
         return false;
       },
-
-      // Misc methods that have nothing to do with calendar stuff.
-
-      /**
-       * Close the date picker if the escape key is pressed.
-       */
-      setEscapeEvent () {
+      setEscapeEvent(): void {
         if (typeof document === 'undefined') {
           return;
         }
 
-        document.addEventListener('keydown', (event) => {
+        document.addEventListener('keydown', (event: KeyboardEvent) => {
           if (event.keyCode == 27 || event.key == 'Escape') {
             this.onClose();
           }
         });
       },
-
-      /**
-       * When the "Ok" button is pressed, or enter is pressed, emit the input
-       * event and close the date picker.
-       */
-      onInput () {
+      onInput(): void {
         const date = this.format ? this.format(this.calculatedDate) : this.calculatedDate;
 
         this.$emit('input', date);
-
         this.onClose();
       },
-
-      /**
-       * Emit a close event so the developer can close the date picker as they
-       * see fit.
-       */
-      onClose () {
+      onClose(): void {
         this.$emit('close');
       }
     }
@@ -623,6 +453,7 @@
     h3 {
       font-size:   $font-size-h6;
       font-weight: 300;
+      cursor:      pointer;
     }
   }
 
@@ -647,10 +478,9 @@
             float:       left;
             padding-top: 100%;
           }
-          border-radius:  50%;
-          flex:           1;
-          text-align:     center;
-          vertical-align: center;
+          border-radius: 50%;
+          flex:          1;
+          text-align:    center;
 
           &:hover {
             background: $bg-color;
@@ -659,7 +489,7 @@
 
           span {
             position: relative;
-            top:      $grid-unit;
+            top:      23%;
           }
         }
       }
@@ -671,25 +501,65 @@
   }
 
   .arrow {
-    flex: 1 0 25%;
+    height:   $grid-unit * 4;
+    flex:     1 0 15%;
+    position: relative;
+    cursor:   pointer;
+
+    &:hover {
+      background: $bg-color;
+    }
+
+    &:before, &:after {
+      content:          "";
+      transition:       all 0.25s ease-in-out;
+      position:         absolute;
+      background-color: $brand-accent;
+      width:            2px;
+      height:           13px;
+      top:              4px;
+      left:             $grid-unit * 2;
+    }
+
+    &:before {
+      transform: translate(4px, 0) rotate(45deg);
+    }
+
+    &:after {
+      transform: translate(4px, 8px) rotate(135deg);
+    }
 
     &:last-child {
       text-align: right;
+
+      &:before, &:after {
+        right: $grid-unit * 3;
+        left:  initial;
+      }
+
+      &:before {
+        transform: translate(4px, 0) rotate(-45deg);
+      }
+
+      &:after {
+        transform: translate(4px, 8px) rotate(-135deg);
+      }
     }
   }
 
   .currentDate {
     cursor:      default;
     text-align:  center;
-    flex:        1 0 50%;
+    flex:        1 0 70%;
     font-size:   14px;
     font-weight: 500;
+    padding-top: $grid-unit * 0.5;
   }
 
   .currentDay {
     font-weight:      bold;
     background-color: $brand-primary;
-    text-shadow:      0 2px 5px rgba(0, 0, 0, .33);
+    color:            $bg-color;
 
     &:hover {
       background-color: $brand-primary !important;
@@ -699,164 +569,45 @@
   .selectedDay {
     font-weight:      bold;
     background-color: $brand-accent;
-    text-shadow:      0 2px 5px rgba(0, 0, 0, .33);
+    color:            $bg-color;
 
     &:hover {
       background-color: $brand-accent !important;
     }
   }
 
-  /* OLD */
-
-  .calendar-date .calendar-arrows.left {
-    display:         flex;
-    align-items:     center;
-    justify-content: flex-start;
-  }
-
-  .calendar-current-date {
-    cursor:     default;
-    text-align: center;
-  }
-
-  .calendar-date .calendar-arrows.right {
-    display:         flex;
-    align-items:     center;
-    justify-content: flex-end;
-  }
-
-  .calendar-date > div {
-    width: 33.33333%;
-  }
-
-  .calendar-date h4 {
-    font-size:   $font-size - 2;
-    font-weight: 500;
-  }
-
-  .calendar-arrows {
-    cursor:  pointer;
-    padding: 0 $grid-unit;
-  }
-
-  .calendar-body table {
-    border-spacing:  2px;
-    border-collapse: separate;
-    cursor:          default;
-    font-size:       12px;
-    margin-top:      $grid-unit;
-    table-layout:    fixed;
-    text-align:      center;
-    width:           100%;
-  }
-
-  .calendar-body table thead {
-    color: $secondary-text-color;
-  }
-
-  .calendar-body table thead td, .calendar-body table thead td {
-    cursor: default !important;
-  }
-
-  .calendar-body tr {
-    height:         $grid-unit * 4.9;
-    vertical-align: middle;
-  }
-
-  .calendar-body td {
-    border-radius:  50%;
-    cursor:         pointer;
-    vertical-align: middle;
-    transition:     background-color .15s;
-    width:          $grid-unit * 4;
-  }
-
-  .calendar-body td:focus {
-    outline: none;
-  }
-
-  .calendar-body tbody td:hover {
-    background-color: $bg-color;
-  }
-
-  .calendar-body td:empty {
-    background-color: transparent !important;
-    cursor:           default;
-  }
-
-  .calendar-body td.current-day {
-    font-weight:      bold;
-    background-color: $brand-primary;
-    text-shadow:      0 2px 5px rgba(0, 0, 0, .33);
-
-    &:hover {
-      background-color: $brand-primary;
-    }
-  }
-
-  .calendar-body td.disabled {
-    color:          $secondary-text-color;
-    cursor:         default;
-    pointer-events: none;
-  }
-
-  .calendar-body td.selected {
-    border-radius:    50%;
-    color:            #FFF;
-    cursor:           pointer;
-    background-color: $brand-accent;
-    text-shadow:      0 2px 5px rgba(0, 0, 0, .33);
-
-    &:hover {
-      background-color: $brand-accent;
-    }
-  }
-
-  .calendar-year-select {
+  .year {
     box-shadow: inset 0 -1px 1px rgba(0, 0, 0, 0.075);
-    height:     353px;
+    max-height: 312px;
     overflow-y: scroll;
     text-align: center;
-  }
 
-  .calendar-year-select div {
-    cursor:     pointer;
-    padding:    $grid-unit 0;
-    transition: background-color .15s;
-  }
+    div {
+      cursor:     pointer;
+      padding:    $grid-unit 0;
+      transition: background-color .15s;
 
-  .calendar-year-select div:hover {
-    background-color: $bg-color;
-  }
+      &:hover {
+        background-color: $bg-color;
+      }
+    }
 
-  .calendar-year-select .selected {
-    font-size: $font-size-h4;
-  }
-
-  .calendar-footer {
-    text-align: right;
-  }
-
-  .calendar-footer button {
-    background-color: transparent;
-    border:           1px solid transparent;
-    box-shadow:       none;
-    color:            $brand-accent;
-    font-size:        $font-size;
-    padding:          $grid-unit * 3;
-    min-width:        $grid-unit * 15;
-    display:          inline-block;
-
-    &:hover {
-      background: $bg-color;
+    .selected {
+      font-size: $font-size-h4;
     }
   }
 
-  .calendar-fade-enter-active, .calendar-fade-leave-active {
-    transition: opacity .15s;
-  }
+  .footer {
+    padding:         $grid-unit;
+    display:         flex;
+    justify-content: flex-end;
 
-  .calendar-fade-enter, .calendar-fade-leave-to {
-    opacity: 0;
+    button {
+      margin-bottom: 0;
+
+      &:last-child {
+        margin-right: 0;
+      }
+    }
   }
 </style>
