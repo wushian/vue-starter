@@ -1,52 +1,29 @@
 <template>
-  <div class="calendar">
-    <div class="calendar-header flex-center">
-      <div>
-        <h3 :class="{ 'calendar-faint': selecting === 'date' }"
-          @click="setSelecting('year')">
-          {{ selectedYear }}
-        </h3>
+  <div :class="$style.calendar">
+    <div :class="$style.header">
+      <h3 @click="setSelecting('year')">
+        {{ selectedYear }}
+      </h3>
 
-        <h2 :class="{ 'calendar-faint': selecting === 'year' }"
-          @click="setSelecting('date')">
-          {{ abbrivatedDay }}, {{ selectedMonthWord }} {{ selectedDay }}
-        </h2>
-      </div>
+      <h2 @click="setSelecting('date')">
+        {{ abbrivatedDay }}, {{ selectedMonthWord }} {{ selectedDay }}
+      </h2>
     </div>
 
-    <!-- Calendar -->
-    <div class="calendar-body" v-if="selecting === 'date'">
-      <div class="calendar-date">
-        <div>
-          <!-- The svg's are from the material design chevron arrows -->
-          <div class="calendar-arrows flex left" @click="setByMonth(currentMonth - 1)"
-            v-if="showLeftArrow">
-            <svg xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24">
-              <path fill="#212121" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
-            </svg>
-          </div>
+    <div :class="$style.body" v-if="selecting === 'date'">
+      <div :class="$style.date">
+        <div :class="$style.arrow" @click="setByMonth(currentMonth - 1)" v-if="showLeftArrow">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="#212121" d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+          </svg>
         </div>
-
-        <div class="calendar-current-date flex-center">
-          <h4>{{ currentMonthWord }} {{ currentYear }}</h4>
-        </div>
-
-        <div>
-          <div class="calendar-arrows flex right" @click="setByMonth(currentMonth + 1)"
-            v-if="showRightArrow">
-            <svg xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24">
-              <path fill="#212121" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
-            </svg>
-          </div>
+        <div :class="$style.currentDate">{{ currentMonthWord }} {{ currentYear }}</div>
+        <div :class="$style.arrow" @click="setByMonth(currentMonth + 1)" v-if="showRightArrow">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+            <path fill="#212121" d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+          </svg>
         </div>
       </div>
-
       <table>
         <thead>
         <tr>
@@ -62,34 +39,30 @@
 
         <tbody>
         <tr v-for="(days, index) in calendar" :key="index">
-          <td :class="{
-                      'current-day': day.currentDay,
-                      'disabled': day.disabled,
-                      'selected': day.selected
-                    }"
+          <td :class="[day.currentDay ? $style.currentDay : '', day.disabled ? $style.disabled : '', day.selected ? $style.selectedDay : '']"
             v-for="day in days"
             :key="`day-${day.day}`"
             tabindex="0"
             @keydown.enter="onInput"
             @keydown.space.stop.prevent="onInput"
             @keydown.esc="onClose"
-            @click="setByDay(day)">{{ day.day }}
+            @click="setByDay(day)">
+            <span>{{ day.day }}</span>
           </td>
         </tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Years -->
-    <div class="calendar-year-select" v-if="selecting === 'year'">
-      <div :class="{ 'selected': year.selected }"
-        :id="`${year.year}-calendar-year`"
-        v-for="year in years"
-        :key="year.year"
-        @click="setByYear(year.year)">
-        {{ year.year }}
-      </div>
-    </div>
+    <!--<div class="calendar-year-select" v-if="selecting === 'year'">-->
+    <!--<div :class="{ 'selected': year.selected }"-->
+    <!--:id="`${year.year}-calendar-year`"-->
+    <!--v-for="year in years"-->
+    <!--:key="year.year"-->
+    <!--@click="setByYear(year.year)">-->
+    <!--{{ year.year }}-->
+    <!--</div>-->
+    <!--</div>-->
 
     <div class="calendar-footer" v-if="! footer">
       <button @click.stop.prevent="onClose">Cancel</button>
@@ -366,29 +339,22 @@
        * @return {Array}
        */
       calendar () {
-        // The calendar's output is a function of all of the days in a given
-        // month, chunked into an array of arrays, each containing 5 or 6
-        // and 7 elements respectively.
-        const days = [];
+        let days = [];
 
-        // Padding for the first row, e.g. if the month's first day starts on
-        // Friday, the first array will be ['', '', '', '', '', '1', '2']
-        const startOfMonthDay = new Date(this.currentYear, this.currentMonth, 1).getDay();
-
-        for (let i = 0, len = startOfMonthDay; i < len; i++) {
-          days.push('');
-        }
-
-        // Create an array containing all days in the current month
+        const paddingLeft = new Date(this.currentYear, this.currentMonth, 1).getDay();
         const daysInMonth = 32 - new Date(this.currentYear, this.currentMonth, 32).getDate();
+        const today = new Date();
+
+        days = days.concat(Array(paddingLeft).fill(''));
 
         for (let i = 0, len = daysInMonth; i < daysInMonth; i++) {
           days.push(i + 1);
+
         }
 
-        // Map the days from numbers to objects that have current day,
-        // selected, and disabled properties for the view.
-        const today = new Date();
+        const paddingRight = (Math.ceil(days.length / 7) * 7) - days.length;
+
+        days = days.concat(Array(paddingRight).fill(''));
 
         const dayObjects = days.map((day) => {
           const currentDay = (day === today.getDate()) &&
@@ -404,7 +370,6 @@
           return { day, currentDay, selected, disabled };
         });
 
-        // Chunk all of the days into an array of arrays, by seven.
         return chunk(dayObjects, 7);
       },
 
@@ -628,79 +593,120 @@
   };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss" module>
   @import "../../styles";
 
-  div, h2, h3, h4, table, tbody, thead, tr, td, button {
-    margin:         0;
-    padding:        0;
-    border:         0;
-    vertical-align: baseline;
-  }
-
-  button {
-    cursor:      pointer;
-    display:     inline-block;
-    padding:     0 $grid-unit * 2;
-    outline:     none;
-    user-select: none;
-  }
-
-  .flex {
-    display: flex;
-  }
-
-  .flex-center {
-    display:         flex;
-    align-items:     center;
-    justify-content: center;
-  }
-
   .calendar {
-    width:         350px;
-    height:        500px;
-    position:      relative;
-    box-shadow:    $panel-shadow;
-    background:    $panel-bg;
-    margin-bottom: $grid-unit * 2;
+    max-width:  $screen-phone;
+    position:   relative;
+    box-shadow: $panel-shadow;
+    background: $panel-bg;
+    margin:     0 0 $grid-unit * 2;
   }
 
-  .calendar-header {
-    color:           $text-color;
-    display:         flex;
-    align-items:     center;
-    justify-content: space-between;
-    padding:         $grid-unit * 2 $grid-unit * 3;
-    background:      linear-gradient(170deg, $brand-accent 0%, $brand-dark-primary 100%);
-    text-shadow:     0 2px 5px rgba(0, 0, 0, .33);
+  .header {
+    color:       $text-color;
+    padding:     $grid-unit * 2 $grid-unit * 3;
+    background:  linear-gradient(170deg, $brand-accent 0%, $brand-dark-primary 100%);
+    text-shadow: 0 2px 5px rgba(0, 0, 0, .33);
+
+    h2, h3 {
+      cursor: default;
+      margin: 0;
+    }
+
+    h2 {
+      font-size:   $font-size-h4;
+      line-height: $font-size-h4;
+    }
+
+    h3 {
+      font-size:   $font-size-h6;
+      font-weight: 300;
+    }
   }
 
-  .calendar-header h2, .calendar-header h3 {
-    cursor: default;
-  }
-
-  .calendar-header h2.calendar-faint, .calendar-header h3.calendar-faint {
-    cursor: pointer;
-  }
-
-  .calendar-header h2 {
-    font-size:   $font-size-h2;
-    line-height: $font-size-h2;
-  }
-
-  .calendar-header h3 {
-    font-size:   $font-size-h6;
-    font-weight: 300;
-  }
-
-  .calendar-body {
+  .body {
     border-bottom: $accordion-item-header-border-top;
     padding:       $grid-unit * 2;
+
+    table {
+      display: block;
+
+      thead, tbody {
+        display: block;
+      }
+
+      tr {
+        display:   flex;
+        flex-wrap: wrap;
+
+        td {
+          &:before {
+            content:     "";
+            float:       left;
+            padding-top: 100%;
+          }
+          border-radius:  50%;
+          flex:           1;
+          text-align:     center;
+          vertical-align: center;
+
+          &:hover {
+            background: $bg-color;
+            cursor:     pointer;
+          }
+
+          span {
+            position: relative;
+            top:      $grid-unit;
+          }
+        }
+      }
+    }
   }
 
-  .calendar-date {
+  .date {
     display: flex;
   }
+
+  .arrow {
+    flex: 1 0 25%;
+
+    &:last-child {
+      text-align: right;
+    }
+  }
+
+  .currentDate {
+    cursor:      default;
+    text-align:  center;
+    flex:        1 0 50%;
+    font-size:   14px;
+    font-weight: 500;
+  }
+
+  .currentDay {
+    font-weight:      bold;
+    background-color: $brand-primary;
+    text-shadow:      0 2px 5px rgba(0, 0, 0, .33);
+
+    &:hover {
+      background-color: $brand-primary !important;
+    }
+  }
+
+  .selectedDay {
+    font-weight:      bold;
+    background-color: $brand-accent;
+    text-shadow:      0 2px 5px rgba(0, 0, 0, .33);
+
+    &:hover {
+      background-color: $brand-accent !important;
+    }
+  }
+
+  /* OLD */
 
   .calendar-date .calendar-arrows.left {
     display:         flex;
@@ -753,7 +759,7 @@
   }
 
   .calendar-body tr {
-    height:         $grid-unit * 5.5;
+    height:         $grid-unit * 4.9;
     vertical-align: middle;
   }
 
@@ -762,7 +768,7 @@
     cursor:         pointer;
     vertical-align: middle;
     transition:     background-color .15s;
-    width:          $grid-unit * 5.4;
+    width:          $grid-unit * 4;
   }
 
   .calendar-body td:focus {
@@ -828,9 +834,7 @@
   }
 
   .calendar-footer {
-    position: absolute;
-    bottom:   $grid-unit * 2;
-    right:    $grid-unit * 2;
+    text-align: right;
   }
 
   .calendar-footer button {
@@ -838,6 +842,14 @@
     border:           1px solid transparent;
     box-shadow:       none;
     color:            $brand-accent;
+    font-size:        $font-size;
+    padding:          $grid-unit * 3;
+    min-width:        $grid-unit * 15;
+    display:          inline-block;
+
+    &:hover {
+      background: $bg-color;
+    }
   }
 
   .calendar-fade-enter-active, .calendar-fade-leave-active {
